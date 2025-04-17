@@ -1,16 +1,15 @@
-// index.js - Shulabot versión completa con menús y fallback GPT
-
+// index.js – Shulabot versión avanzada con GPT-4 y lógica empresarial
 const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // necesario para Twilio
+app.use(express.urlencoded({ extended: true })); // Necesario para Twilio
 
-// 🟢 Funciones automáticas de respuesta
+// 🟩 Funciones automáticas con respuestas prediseñadas
 function mensajeBienvenida() {
-  return `👋 Hola! Soy *Shulabot*, tu barista digital de *La Shula Café* ☕️🚲\n¿Qué te gustaría hacer hoy?\n1️⃣ Ver menú\n2️⃣ Ver promociones\n3️⃣ Hacer un pedido\n4️⃣ Saber dónde estamos\n5️⃣ Hablar con alguien del equipo`;
+  return `👋 ¡Hola! Soy *Shulabot*, tu barista digital de *La Shula Café* ☕️🚲\n¿Qué te gustaría hacer hoy?\n1️⃣ Ver menú\n2️⃣ Ver promociones\n3️⃣ Hacer un pedido\n4️⃣ Saber dónde estamos\n5️⃣ Hablar con el equipo`;
 }
 
 function mostrarMenu() {
@@ -18,41 +17,52 @@ function mostrarMenu() {
 }
 
 function mostrarPromos() {
-  return `🎉 *Promos activas:*\n- 2x1 en Cold Brew (hasta 10 AM con ropa deportiva)\n- Frappe + Empanada de zarzamora $75\n*Válido mostrando este mensaje.*`;
+  return `🎉 *Promos activas:*\n- 2x1 en Cold Brew (hasta 10 AM con ropa deportiva)\n- Frappe + Empanada de zarzamora $75\n*Solo mostrando este mensaje* ✅`;
 }
 
 function mandarUbicacion() {
-  return `📍 *Ubicación:* Avenida San Isidro, frente a Arboledas\n🕒 *Horario:* L-V 7-10:30AM / Sáb 8-11AM`;
+  return `📍 *Ubicación:* Avenida San Isidro, frente a Arboledas\n🕒 *Horario:* L-V 7:00 - 10:30 AM | Sáb 8:00 - 11:00 AM`;
 }
 
 function mensajeContacto() {
-  return `✉️ Puedes hablar con alguien del equipo respondiendo *Hablar* o acércate directamente al carrito. ☕️`;
+  return `✉️ Puedes hablar con el equipo escribiendo *Hablar* o acércate directo al carrito. ¡Te esperamos!`;
 }
 
-// 🧠 Fallback GPT
+// 🧠 Fallback con GPT-4 usando un prompt empresarial
 async function usarGPT(mensaje) {
-  const prompt = `Actúa como Shulabot, un barista experto en café de especialidad. Responde como si fueras parte de La Shula Café, un carrito de café en Metepec. Usa un tono amistoso, profesional y breve. El cliente pregunta: ${mensaje}`;
+  const promptSistema = `
+Eres *Shulabot*, el asistente barista digital de *La Shula Café*, una cafetería móvil de especialidad en Metepec. 
+Tu personalidad es amigable, profesional y concisa. Respondes solo sobre productos, promociones, ubicación, horarios y dudas relacionadas al café de especialidad y el negocio. 
+Nunca inventas información ni respondes fuera del contexto del negocio. Si algo no lo sabes, invita al cliente a hablar con el equipo humano. 
+Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunidad de café.
+`;
 
-  const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-    model: 'openai/gpt-3.5-turbo',
-    messages: [{ role: 'user', content: prompt }]
-  }, {
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json'
+  const response = await axios.post(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      model: 'gpt-4',
+      messages: [
+        { role: 'system', content: promptSistema },
+        { role: 'user', content: mensaje }
+      ]
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
     }
-  });
+  );
 
   return response.data.choices[0].message.content;
 }
 
-// 🔁 Webhook de Twilio
+// 🔁 Webhook principal conectado con Twilio
 app.post('/webhook', async (req, res) => {
   const userMessage = req.body.Body?.trim().toLowerCase();
-  const from = req.body.From;
-  let reply;
+  let reply = '';
 
-  // 🔤 Opciones con palabras clave
+  // 🔤 Palabras clave y opciones del menú
   const saludos = ['hola', 'hi', 'buenos días', 'buenas'];
   const opcionMenu = ['1', 'ver menú', 'menu'];
   const opcionPromos = ['2', 'ver promociones', 'promos', 'promociones'];
@@ -68,31 +78,28 @@ app.post('/webhook', async (req, res) => {
     } else if (opcionPromos.some(o => userMessage.includes(o))) {
       reply = mostrarPromos();
     } else if (opcionPedido.some(o => userMessage.includes(o))) {
-      reply = `📝 Para hacer tu pedido, por favor escribe el nombre exacto de la bebida o número de menú.\nEjemplo: *Cold Brew* o *4*`;
+      reply = `📝 Para hacer tu pedido, escribe el nombre exacto del producto o su número.\nEjemplo: *Cold Brew* o *4*`;
     } else if (opcionUbicacion.some(o => userMessage.includes(o))) {
       reply = mandarUbicacion();
     } else if (opcionContacto.some(o => userMessage.includes(o))) {
       reply = mensajeContacto();
     } else {
-      // Si no coincide nada: usar GPT como fallback
-      reply = await usarGPT(userMessage);
+      reply = await usarGPT(userMessage); // Fallback GPT-4
     }
 
     res.set('Content-Type', 'text/xml');
     res.send(`<Response><Message>${reply}</Message></Response>`);
-
   } catch (error) {
-    console.error('❌ Error en webhook:', error.message);
-    res.status(500).send(`<Response><Message>Hubo un problema procesando tu mensaje. Intenta más tarde.</Message></Response>`);
+    console.error('❌ Error GPT:', error.message);
+    res.status(500).send(`<Response><Message>Lo siento, algo falló. Intenta más tarde.</Message></Response>`);
   }
 });
 
-// 🟢 Ruta para prueba rápida
+// 🟢 Verificación de que está corriendo
 app.get('/', (req, res) => {
   res.send('✅ Shulabot está en línea. Usa POST a /webhook para interactuar.');
 });
 
-// 🟢 Escuchar puerto
 app.listen(3000, () => {
-  console.log('Shulabot corriendo en puerto 3000');
+  console.log('Shulabot corriendo en puerto 3000 🚀');
 });
