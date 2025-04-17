@@ -44,7 +44,7 @@ Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunid
   'https://openrouter.ai/api/v1/chat/completions',
   {
     model: 'openai/gpt-3.5-turbo',
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: promptSistema }]
   },
   {
     headers: {
