@@ -97,9 +97,18 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-// 🟢 Verificación de que está corriendo
+// 🟢 Verificación básica
 app.get('/', (req, res) => {
   res.send('✅ Shulabot está en línea. Usa POST a /webhook para interactuar.');
+});
+
+// 🧪 Endpoint para verificar si la OPENAI_API_KEY fue detectada
+app.get('/debug-key', (req, res) => {
+  if (process.env.OPENAI_API_KEY) {
+    res.send('🔑 Key detectada: ✅ Sí');
+  } else {
+    res.send('🔑 Key detectada: ❌ No');
+  }
 });
 
 app.listen(3000, () => {
