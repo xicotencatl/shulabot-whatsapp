@@ -40,21 +40,18 @@ Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunid
   console.log('🔑 Key detectada:', process.env.OPENAI_API_KEY ? '✅ Sí' : '❌ No');
 
   const response = await axios.post(
-    'https://api.openai.com/v1/chat/completions',
-    {
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: promptSistema },
-        { role: 'user', content: mensaje }
-      ]
-    },
-    {
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
+  'https://openrouter.ai/api/v1/chat/completions',
+  {
+    model: 'openai/gpt-3.5-turbo',
+    messages: [{ role: 'user', content: prompt }]
+  },
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json'
     }
-  );
+  }
+);
 
   return response.data.choices[0].message.content;
 }
