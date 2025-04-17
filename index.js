@@ -37,7 +37,8 @@ Nunca inventas información ni respondes fuera del contexto del negocio. Si algo
 Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunidad de café.
 `;
 
-  console.log('🔑 Key detectada:', process.env.OPENAI_API_KEY ? '✅ Sí' : '❌ No');
+  console.log('🔑 Key detectada:', process.env.OPENROUTER_API_KEY ? '✅ Sí' : '❌ No');
+
 
   const response = await axios.post(
   'https://openrouter.ai/api/v1/chat/completions',
@@ -101,7 +102,7 @@ app.get('/', (req, res) => {
 
 // 🧪 Endpoint para verificar si la OPENAI_API_KEY fue detectada
 app.get('/debug-key', (req, res) => {
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OPENROUTER_API_KEY) {
     res.send('🔑 Key detectada: ✅ Sí');
   } else {
     res.send('🔑 Key detectada: ❌ No');
