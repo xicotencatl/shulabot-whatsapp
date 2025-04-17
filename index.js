@@ -1,4 +1,4 @@
-// index.js – Shulabot versión avanzada con GPT-4 y lógica empresarial
+// index.js – Shulabot versión GPT-3.5 Turbo
 const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
@@ -28,7 +28,7 @@ function mensajeContacto() {
   return `✉️ Puedes hablar con el equipo escribiendo *Hablar* o acércate directo al carrito. ¡Te esperamos!`;
 }
 
-// 🧠 Fallback con GPT-4 usando un prompt empresarial
+// 🧠 Fallback con GPT-3.5 Turbo usando un prompt empresarial
 async function usarGPT(mensaje) {
   const promptSistema = `
 Eres *Shulabot*, el asistente barista digital de *La Shula Café*, una cafetería móvil de especialidad en Metepec. 
@@ -42,7 +42,7 @@ Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunid
   const response = await axios.post(
     'https://api.openai.com/v1/chat/completions',
     {
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: promptSistema },
         { role: 'user', content: mensaje }
@@ -86,7 +86,7 @@ app.post('/webhook', async (req, res) => {
     } else if (opcionContacto.some(o => userMessage.includes(o))) {
       reply = mensajeContacto();
     } else {
-      reply = await usarGPT(userMessage); // Fallback GPT-4
+      reply = await usarGPT(userMessage); // Fallback GPT-3.5
     }
 
     res.set('Content-Type', 'text/xml');
@@ -97,7 +97,7 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-// 🟢 Verificación básica
+// 🟢 Verificación de que está corriendo
 app.get('/', (req, res) => {
   res.send('✅ Shulabot está en línea. Usa POST a /webhook para interactuar.');
 });
