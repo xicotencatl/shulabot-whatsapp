@@ -1,86 +1,94 @@
+// index.js (versión mejorada con menús y fallback GPT)
 const express = require('express');
 const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Necesario para datos x-www-form-urlencoded de Twilio
+app.use(express.urlencoded({ extended: true })); // necesario para Twilio
 
-// Ruta para interactuar desde Postman o sistemas externos
-app.post('/shulabot', async (req, res) => {
-  const userMessage = req.body.message;
+// Funciones de respuestas automatizadas
+function mensajeBienvenida() {
+  return `👋 Hola! Soy *Shulabot*, tu barista digital de *La Shula Café* ☕️🚲\n¿Qué te gustaría hacer hoy?\n1️⃣ Ver menú\n2️⃣ Ver promociones\n3️⃣ Hacer un pedido\n4️⃣ Saber dónde estamos\n5️⃣ Hablar con alguien del equipo`;
+}
 
-  const prompt = `Actúa como Shulabot, un barista experto en café. Cliente dice: "${userMessage}"`;
+function mostrarMenu() {
+  return `📜 *Nuestro menú del día:*\n1. Espresso - $30\n2. Capuchino - $40\n3. Latte Vainilla - $45\n4. Cold Brew - $45\n5. Horchata Latte - $50\n6. Frappe Frutos Rojos - $55\nEscribe el nombre o número para pedir o saber más.`;
+}
 
-  try {
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: 'openai/gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }]
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+function mostrarPromos() {
+  return `🎉 *Promos activas:*\n- 2x1 en Cold Brew (hasta 10 AM con ropa deportiva)\n- Frappe + Empanada de zarzamora $75\n*Válido mostrando este mensaje.*`;
+}
 
-    const reply = response.data.choices[0].message.content;
-    res.json({ reply });
+function mandarUbicacion() {
+  return `📍 *Ubicación:* Avenida San Isidro, frente a Arboledas\n🕒 *Horario:* L-V 7-10:30AM / Sáb 8-11AM`;
+}
 
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: 'Error al generar respuesta' });
-  }
-});
+function mensajeContacto() {
+  return `✉️ Puedes hablar con alguien del equipo respondiendo *Hablar* o acércate directamente al carrito. ☕️`;
+}
 
-// Ruta para mensajes entrantes desde WhatsApp vía Twilio
+async function usarGPT(mensaje) {
+  const prompt = `Actúa como Shulabot, un barista experto en café de especialidad. Responde como si fueras parte de La Shula Café, un carrito de café en Metepec. Usa un tono amistoso, profesional y breve. El cliente pregunta: ${mensaje}`;
+
+  const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+    model: 'openai/gpt-3.5-turbo',
+    messages: [{ role: 'user', content: prompt }]
+  }, {
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  return response.data.choices[0].message.content;
+}
+
+// Endpoint de Webhook para Twilio + lógica condicional
 app.post('/webhook', async (req, res) => {
-  console.log('🔔 Webhook recibido:', req.body); // Log de depuración
-
-  const userMessage = req.body.Body;
+  const userMessage = req.body.Body?.trim().toLowerCase();
   const from = req.body.From;
 
-  const prompt = `Actúa como Shulabot, un barista experto en café. Cliente dice: "${userMessage}"`;
+  console.log('📩 Mensaje recibido:', userMessage);
 
-  try {
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: 'openai/gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }]
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+  const saludos = ['hola', 'hi', 'buenos días', 'buenas', 'holi'];
 
-    const reply = response.data.choices[0].message.content;
+  if (saludos.some(s => userMessage.includes(s))) {
 
-    // Devolver XML como Twilio espera
+    const reply = mensajeBienvenida();
     res.set('Content-Type', 'text/xml');
-    res.send(`
-<Response>
-  <Message>${reply}</Message>
-</Response>
-    `);
+    return res.send(`<Response><Message>${reply}</Message></Response>`);
+  }
 
-  } catch (error) {
-    console.error('❌ Error generando respuesta:', error.response?.data || error.message);
-    res.status(500).send('Error interno del servidor');
+  // Fallback a GPT
+  try {
+
+
+
+
+
+
+
+
+
+
+
+    const gptReply = await usarGPT(userMessage);
+
+    res.set('Content-Type', 'text/xml');
+    return res.send(`<Response><Message>${gptReply}</Message></Response>`);
+
+  } catch (err) {
+    console.error('❌ Error generando respuesta GPT:', err.message);
+    res.status(500).send(`<Response><Message>Lo siento, hubo un error procesando tu mensaje.</Message></Response>`);
   }
 });
 
-// Ruta raíz para pruebas básicas
+
 app.get('/', (req, res) => {
-  res.send('✅ Shulabot está en línea. Usa POST a /shulabot o /webhook para interactuar.');
+  res.send('✅ Shulabot está en línea. Usa POST a /webhook para interactuar.');
 });
 
 app.listen(3000, () => {
-  console.log('🟢 Shulabot corriendo en puerto 3000 wuahuuu');
+  console.log('Shulabot corriendo en puerto 3000');
 });
