@@ -37,6 +37,8 @@ Nunca inventas información ni respondes fuera del contexto del negocio. Si algo
 Siempre hablas en tono cálido, usas emojis moderadamente, y fomentas la comunidad de café.
 `;
 
+  console.log('🔑 Key detectada:', process.env.OPENAI_API_KEY ? '✅ Sí' : '❌ No');
+
   const response = await axios.post(
     'https://api.openai.com/v1/chat/completions',
     {
