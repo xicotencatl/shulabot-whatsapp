@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: true })); // Necesario para Twilio
 
 // 🟩 Funciones automáticas con respuestas prediseñadas
 function mensajeBienvenida() {
-  return `👋 ¡Hola! Soy *Shulabot*, tu barista digital de *La Shula Café* ☕️🚲\n¿Qué te gustaría hacer hoy?\n1️⃣ Ver menú\n2️⃣ Ver promociones\n3️⃣ Hacer un pedido\n4️⃣ Saber dónde estamos\n5️⃣ Hablar con el equipo`;
+  return `👋 ¡Hola! Soy *Shulabot*, tu barista digital de *La Shula Café* ☕️🚲\n¿Qué te gustaría hacer hoy?\n1️⃣ Ver menú\n2️⃣ Ver promociones\n3️⃣ Hacer un pedido\n4️⃣ Saber dónde estamos\n5️⃣ Hablar con el equipo\n6 Registrarme`;
 }
 
 function mostrarMenu() {
@@ -26,6 +26,10 @@ function mandarUbicacion() {
 
 function mensajeContacto() {
   return `✉️ Puedes hablar con el equipo escribiendo *Hablar* o acércate directo al carrito. ¡Te esperamos!`;
+}
+
+function Registro() {
+  return `📝 Regístrate para recibir promociones y regalos 👉 https://forms.gle/hLVH9zQpmPJHK5Vy9`;
 }
 
 // 🧠 Fallback con GPT-3.5 Turbo usando un prompt empresarial
@@ -69,6 +73,7 @@ app.post('/webhook', async (req, res) => {
   const opcionPedido = ['3', 'hacer un pedido', 'pedido', 'ordenar'];
   const opcionUbicacion = ['4', 'ubicación', 'dónde están', 'donde están'];
   const opcionContacto = ['5', 'hablar con alguien', 'contacto', 'hablar'];
+  const opcionRegistrar = ['6', 'registrar', 'registra', 're'];
 
   try {
     if (saludos.some(s => userMessage.includes(s))) {
@@ -83,6 +88,8 @@ app.post('/webhook', async (req, res) => {
       reply = mandarUbicacion();
     } else if (opcionContacto.some(o => userMessage.includes(o))) {
       reply = mensajeContacto();
+    } else if (opcionRegistrar.some(o => userMessage.includes(o))) {
+      reply = Registro();  
     } else {
       reply = await usarGPT(userMessage); // Fallback GPT-3.5
     }
